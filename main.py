@@ -1,53 +1,107 @@
 #coding=utf-8
+import os
 import jieba as jb
+from dotenv import load_dotenv
+import mariadb
 
-jb.set_dictionary('./library/dict.txt.big')
+load_dotenv()
 
-file = open('./text/data.txt', 'r', encoding='utf-8')
-article_origin = []
-for line in file:
-    article_origin.append(line)
-file.close()
-article = ''.join(article_origin)
+"""
+DB schema:
+id, title, url, time, keyword, content, emotional_value
+"""
 
-with open('./library/NTUSD_positive_unicode.txt', encoding='utf-8', mode='r') as f:
+
+def dictionary(positive_words, negative_words):
+    with open('./library/NTUSD_positive_unicode.txt', encoding='utf-8', mode='r') as f:
+        for i in f:
+            positive_words.append(i.strip())
+
+    with open('./library/positive.txt', encoding='utf-8', mode='r') as f:
+        for i in f:
+            positive_words.append(i.strip())
+
+    with open('./library/NTUSD_negative_unicode.txt', encoding='utf-8', mode='r') as f:
+        for k in f:
+            negative_words.append(k.strip())
+
+    with open('./library/negative.txt', encoding='utf-8', mode='r') as f:
+        for k in f:
+            negative_words.append(k.strip())
+
+    return positive_words, negative_words
+
+
+def analysis(positive_words, negative_words, article):
+    jb.set_dictionary('./library/dict.txt.big')
+    score = 0
+    jieba_result = jb.cut(article, cut_all=False, HMM=True)
+    for word in jieba_result:
+        #add = False
+        #neg = False
+        sign = "0123456789abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ~!@#$%^&*()_+-*/<>,.[]\/，。、 ！？©；「」～※【】《》（）"
+        if word in sign:
+            continue
+        elif word in positive_words:
+            score += 1
+            #add = True
+        elif word in negative_words:
+            score -= 1
+            #neg = True
+        else:
+            pass
+        # 每個拆完的字的狀況
+        # print(f'word:{word}, add:{add}, neg:{neg}, now_sum:{score}')
+    #print("\n Total score is : ", score)
+    return score
+
+
+def sql_query():
+    sql_connect = mariadb.connect(host=os.getenv('DB_HOST'), user=os.getenv('DB_USERNAME'), passwd=os.getenv('PB_PASSWORD'),
+                                  database=os.getenv('DB_DATABASE'))
+
+    cursor = sql_connect.cursor()
+    sql = "SELECT id,content,emotional_value FROM `native_cloud_final` WHERE emotional_value=0 "
+    cursor.execute(sql)
+    data = cursor.fetchall()
+    """
+    for i in data:
+        print(i)
+    """
+    cursor.close()
+    sql_connect.close()
+
+    return data
+
+
+def send_score_to_sql(id_index, score):
+    sql_connect = mariadb.connect(host=os.getenv('DB_HOST'),
+                                  user=os.getenv('DB_USERNAME'),
+                                  passwd=os.getenv('PB_PASSWORD'),
+                                  database=os.getenv('DB_DATABASE'))
+
+    cursor = sql_connect.cursor()
+    sql = "UPDATE native_cloud_final SET emotional_value="+ str(score) +" where id="+ str(id_index)
+    cursor.execute(sql)
+    sql_connect.commit()
+
+    cursor.close()
+    sql_connect.close()
+
+
+def main():
     positive_words = []
-    for i in f:
-        positive_words.append(i.strip())
-
-with open('./library/positive.txt', encoding='utf-8', mode='r') as f:
-    for i in f:
-        positive_words.append(i.strip())
-
-with open('./library/NTUSD_negative_unicode.txt', encoding='utf-8', mode='r') as f:
     negative_words = []
-    for k in f:
-        negative_words.append(k.strip())
+    positive_words, negative_words = dictionary(positive_words, negative_words)
 
-with open('./library/negative.txt', encoding='utf-8', mode='r') as f:
-    for k in f:
-        negative_words.append(k.strip())
+    # article[][][] 分別是 id, contents, emotional_value
+    article = sql_query()
 
-score = 0
-jieba_result = jb.cut(article, cut_all=False, HMM=True)
-for word in jieba_result:
-    add = False
-    neg = False
-    sign = "0123456789abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ~!@#$%^&*()_+-*/<>,.[]\/，。、 ！？©；「」～※【】《》（）"
-    if word in sign:
-        continue
-    elif word in positive_words:
-        score += 1
-        add = True
-    elif word in negative_words:
-        score -= 1
-        neg = True
-    else:
-        pass
-    #每個拆完的字的狀況
-    print(f'word:{word}, add:{add}, neg:{neg}, now_sum:{score}')
+    # query 有幾個就要分析幾次並記錄到資料庫
+    for i in range(len(article)):
+        result_score = analysis(positive_words, negative_words, article[i][1])
+        send_score_to_sql(article[i][0], result_score)
 
-print("\n Total score is : ", score)
 
-#DB schema:
-#id, title, url, time, keyword, content, emotional_value
+if __name__ == '__main__':
+    main()

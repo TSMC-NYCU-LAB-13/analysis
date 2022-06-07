@@ -57,11 +57,11 @@ def analysis(positive_words, negative_words, article):
 
 
 def sql_query():
-    sql_connect = mariadb.connect(host=os.getenv('DB_HOST'), user=os.getenv('DB_USERNAME'), passwd=os.getenv('PB_PASSWORD'),
+    sql_connect = mariadb.connect(host=os.getenv('DB_HOST'), user=os.getenv('DB_USERNAME'), passwd=os.getenv('DB_PASSWORD'),
                                   database=os.getenv('DB_DATABASE'))
 
     cursor = sql_connect.cursor()
-    sql = "SELECT id,content,emotional_value FROM `native_cloud_final` WHERE emotional_value=0 "
+    sql = "SELECT id,content,emotional_value FROM articles WHERE emotional_value IS NULL "
     cursor.execute(sql)
     data = cursor.fetchall()
     """
@@ -77,11 +77,11 @@ def sql_query():
 def send_score_to_sql(id_index, score):
     sql_connect = mariadb.connect(host=os.getenv('DB_HOST'),
                                   user=os.getenv('DB_USERNAME'),
-                                  passwd=os.getenv('PB_PASSWORD'),
+                                  passwd=os.getenv('DB_PASSWORD'),
                                   database=os.getenv('DB_DATABASE'))
 
     cursor = sql_connect.cursor()
-    sql = "UPDATE native_cloud_final SET emotional_value="+ str(score) +" where id="+ str(id_index)
+    sql = "UPDATE articles SET emotional_value="+ str(score) +" where id="+ str(id_index)
     cursor.execute(sql)
     sql_connect.commit()
 
@@ -94,7 +94,7 @@ def main():
     negative_words = []
     positive_words, negative_words = dictionary(positive_words, negative_words)
 
-    # article[][][] 分別是 id, contents, emotional_value
+    # article[][][] (List)分別是 id, contents, emotional_value
     article = sql_query()
 
     # query 有幾個就要分析幾次並記錄到資料庫

@@ -43,10 +43,10 @@ def analysis(positive_words, negative_words, article):
         if word in sign:
             continue
         elif word in positive_words:
-            score += 1
+            score += 1.1
             #add = True
         elif word in negative_words:
-            score -= 1
+            score -= 1.1
             #neg = True
         else:
             pass

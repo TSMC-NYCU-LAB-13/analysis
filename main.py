@@ -70,7 +70,6 @@ def sql_query():
     """
     cursor.close()
     sql_connect.close()
-
     return data
 
 
@@ -84,7 +83,6 @@ def send_score_to_sql(id_index, score):
     sql = "UPDATE articles SET emotional_value="+ str(score) +" where id="+ str(id_index)
     cursor.execute(sql)
     sql_connect.commit()
-
     cursor.close()
     sql_connect.close()
 

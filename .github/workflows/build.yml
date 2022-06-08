@@ -13,7 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
+      - run: |
+          sudo apt-get update
+          sudo apt-get -yy install gcc libmariadb3 libmariadb-dev
       - uses: actions/setup-python@v2
         with:
           python-version: '3.10'
@@ -24,13 +26,13 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pip install pylint coverage
       - run: coverage run -m unittest discover
-      - run: coverage report
-      - run: coverage html
-      - run: coverage xml
-      - uses: actions/upload-artifact@v2
-        with:
-          name: code-coverage
-          path: htmlcov
+      # - run: coverage report
+      # - run: coverage html
+      # - run: coverage xml
+      # - uses: actions/upload-artifact@v2
+      #   with:
+      #     name: code-coverage
+      #     path: htmlcov
 
   # sonarcloud:
   #   name: SonarCloud

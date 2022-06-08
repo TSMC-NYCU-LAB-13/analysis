@@ -33,7 +33,6 @@ def dictionary(positive_words, negative_words):
 
 
 def analysis(positive_words, negative_words, article):
-    jb.set_dictionary('./library/dict.txt.big')
     score = 0
     jieba_result = jb.cut(article, cut_all=False, HMM=True)
     for word in jieba_result:
@@ -91,6 +90,8 @@ def main():
     positive_words = []
     negative_words = []
     positive_words, negative_words = dictionary(positive_words, negative_words)
+
+    jb.set_dictionary('./library/dict.txt.big')
 
     # article[][][] (List)分別是 id, contents, emotional_value
     article = sql_query()

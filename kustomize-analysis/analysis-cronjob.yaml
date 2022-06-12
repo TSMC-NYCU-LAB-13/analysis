@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: analysis
+  namespace: tsmc-nycu-lab-13
+spec:
+  schedule: "* * */1 * *"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: analysis
+            sidecar.istio.io/inject: "false"
+        spec:
+          containers:
+          - image: quay.io/tsmc-nycu-lab-13/analysis
+            name: analysis
+            envFrom:
+              - secretRef:
+                  name: analysis-env
+            resources:
+              requests:
+                memory: "128M"
+                cpu: "500m"
+            volumeMounts:
+              - mountPath: /tmp
+                name: tmp-volume
+          restartPolicy: Never
+          volumes:
+            - name: tmp-volume
+              emptyDir: {}

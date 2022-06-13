@@ -4,7 +4,7 @@ metadata:
   name: analysis
   namespace: tsmc-nycu-lab-13
 spec:
-  schedule: "* * */1 * *"
+  schedule: "00 01 * * *"
   suspend: true
   jobTemplate:
     spec:
